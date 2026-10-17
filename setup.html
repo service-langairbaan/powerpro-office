@@ -1,0 +1,138 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Setup | POWERPRO OFFICE</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg,#061a31,#10496d);
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 32px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 60px #0003;
+    }
+    h1 { color: #092a48; margin-bottom: 5px; }
+    p { color: #64748b; line-height: 1.6; }
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: bold;
+      color: #26384a;
+    }
+    input {
+      width: 100%;
+      padding: 13px;
+      margin-top: 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 9px;
+      font-size: 15px;
+    }
+    button {
+      width: 100%;
+      margin-top: 25px;
+      padding: 15px;
+      background: #087fb6;
+      color: white;
+      border: 0;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .6; }
+    #result { margin-top: 18px; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>POWERPRO OFFICE</h1>
+    <p>ตั้งค่าบัญชีผู้ดูแลระบบครั้งแรก</p>
+
+    <form id="setupForm">
+      <label for="secret">ADMIN_SETUP_SECRET</label>
+      <input id="secret" type="password"
+        autocomplete="off" required>
+
+      <label for="password">รหัสผ่าน Admin ใหม่</label>
+      <input id="password" type="password"
+        minlength="12" maxlength="128"
+        autocomplete="new-password" required>
+
+      <button id="submitBtn" type="submit">
+        สร้างบัญชี Admin
+      </button>
+    </form>
+
+    <p id="result" role="status"></p>
+  </main>
+
+  <script>
+    const form = document.getElementById("setupForm");
+    const result = document.getElementById("result");
+    const button = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      button.disabled = true;
+      result.textContent = "กำลังสร้างบัญชี...";
+
+      const setupSecret =
+        document.getElementById("secret").value;
+      const password =
+        document.getElementById("password").value;
+
+      try {
+        const response = await fetch("/api/setup-admin", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ setupSecret, password })
+        });
+
+        const data = await response.json();
+
+        if (response.status === 201) {
+          result.style.color = "green";
+          result.textContent =
+            "สร้างบัญชี Admin สำเร็จ!";
+          form.reset();
+        } else {
+          result.style.color = "#b91c1c";
+          const messages = {
+            401: "Setup Secret ไม่ตรงกับ Cloudflare",
+            403: "ระบบปฏิเสธคำขอ",
+            409: "มีบัญชี Admin อยู่แล้ว",
+            503: "การตั้งค่าระบบยังไม่พร้อม"
+          };
+          result.textContent =
+            messages[response.status] ||
+            data.error ||
+            "เกิดข้อผิดพลาด";
+        }
+      } catch (error) {
+        result.style.color = "#b91c1c";
+        result.textContent =
+          "เชื่อมต่อระบบไม่สำเร็จ กรุณาลองใหม่";
+      } finally {
+        button.disabled = false;
+        document.getElementById("secret").value = "";
+        document.getElementById("password").value = "";
+      }
+    });
+  </script>
+</body>
+</html>
