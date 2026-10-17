@@ -58,10 +58,18 @@ function safeEqual(a, b) {
 
 export async function onRequestPost({ request, env }) {
   try {
-    if (!env.DB || !env.ADMIN_SETUP_SECRET ||
-        env.ADMIN_SETUP_SECRET.length < 32) {
-      return json({ error: "Configuration error" }, 503);
-    }
+   if (!env.DB || !env.ADMIN_SETUP_SECRET ||
+    env.ADMIN_SETUP_SECRET.length < 32) {
+  console.error("Setup configuration missing", {
+    dbBound: !!env.DB,
+    secretConfigured: !!env.ADMIN_SETUP_SECRET,
+    secretLengthValid:
+      typeof env.ADMIN_SETUP_SECRET === "string" &&
+      env.ADMIN_SETUP_SECRET.length >= 32
+  });
+
+  return json({ error: "Configuration error" }, 503);
+}
 
     const origin = request.headers.get("Origin");
     if (origin !== new URL(request.url).origin) {
